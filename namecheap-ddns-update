@@ -3,7 +3,10 @@ GLOBIGNORE="*"
 # for a domain you own hosted at namecheap, register one or more subdomains
 # to an IP address in namecheaps dynamicdns system
 
-if [ -r ~/.namecheap-ddns-update ]; then
+if [ -r $(dirname "$0")/.env ]; then
+  echo "Sourcing .env file at the same dir"
+  source $(dirname "$0")/.env
+elif [ -r ~/.namecheap-ddns-update ]; then
   echo "Sourcing user ($USER) .namecheap-ddns-update file"
   source ~/.namecheap-ddns-update
 fi
@@ -18,7 +21,7 @@ update() {
       RESP="$(curl --silent --connect-timeout 10 $URL)"
       error_msg="$(echo -e $RESP | gawk '{ match($0, /<ErrCount>(.*)<\/ErrCount>.+<Err1>(.*)<\/Err1>/, arr); if (arr[1] > 0 ) print arr[2] }')"
       if [ "$error_msg" ]; then
-        echo "ERROR : $error_msg"
+        echo "ERROR : $error_msg" 1>&2;
         if [ "$EXIT_ON_ERROR" = true ]; then
           exit 1
         fi
@@ -40,9 +43,10 @@ namecheap.com. This can only update an existing A record, it cannot create
 a new A record. Use namecheap's advanced DNS settings for your domain to
 create A records. The args d, s, i and t have corresponding ENV options. The
 Dynamice DNS Password has to be set with the NC_DDNS_PASS environment variable.
-You could also create an environment file in the user directory running this
-script called .namecheap-ddns-update. This file is sourced if it is found and
-is readable e.g. source ~/.namecheap-ddns-update
+You could also create an environment file in the same directory as the script,
+called .env, or in directory of the user running this script, called
+.namecheap-ddns-update. The .env file is sourced first if found, if it does
+not exist, then .namecheap-ddns-update sourced if found.
 
     -h             display this help and exit
     -e             exit if any call to update a subdomains IP address fails
@@ -101,4 +105,3 @@ else
   # Run once and exit
   update
 fi
-
